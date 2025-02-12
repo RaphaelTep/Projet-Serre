@@ -22,12 +22,19 @@ int hum_min;
 #define SEUIL 500000 // Seuil du capteur d'humidité
 
 float temperature; // Variable pour la température
-float temp_min;
+float temp_min = 10.0;
+float temp_max = 20.0;
 float hygrometrie; // Variable pour le taux d'hygrométrie (humidité dans l'air)
 float hygrometrie_min;
 #define TEMP_HYG_PIN 4 // Le pin de l'ESP32 qui va servir a lire le capteur de température et d'hygrométrie
 #define DHTTYPE DHT11 //On utilisera le DHT11
 DHT temp_hyg(TEMP_HYG_PIN,DHTTYPE); // création d'un objet temp_hyg de la classe DHT
+
+#define VENTI_PIN 13
+#define ARROSE_PIN 12
+#define BRUMI_PIN 33
+#define HUMIVCC_PIN 32
+ 
 
 time_t departTimer=time(NULL); // création d'un timer pour appeler les fonctions toutes les x secondes
 
@@ -47,7 +54,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 .then(data => {
                     document.getElementById("tempValue").innerText = data;
             fetch("/humidite")
-                .then(response => response.text())
+                .then(response => response.text())    
                 .then(data => {
                     document.getElementById("HumValue").innerText = data;
             fetch("/hygrometrie")
@@ -115,6 +122,10 @@ void setup() {
     
     // Initialisation du capteur DHT11
     temp_hyg.begin();
+
+    //Définit le pin d'input 13 (celui du ventilateur) en tant que pin de sortie
+    pinMode(VENTI_PIN,OUTPUT);
+    pinMode(ARROSE_PIN,OUTPUT);
 }
 
 // code de la fonction qui récupère l'humidité au sol
@@ -145,6 +156,20 @@ void loop()
   {
     Temp_Hum();
     Hum_sol();
+    departTimer = time(NULL);
+    if (temperature>temperature_max)   
+    {
+      digitalWrite(VENTI_PIN, HIGH);
+      delay(10000);
+      digitalWrite(VENTI_PIN,LOW);
+    }
+
+    if (hygrometrie < hygrometrie_min)
+    {
+      digitalWrite(ARROSE_PIN, HIGH);
+      delay(10000);
+      digitalWrite(ARROSE_PIN,LOW);
+    }
     Serial.print("\ntemperature : ");
     Serial.print(temperature);
     Serial.print("°C");
@@ -153,6 +178,6 @@ void loop()
     Serial.print("%");
     Serial.print("\nHumidité au sol : ");
     Serial.print(humidite);
-    departTimer = time(NULL);
+    
   }
 }
