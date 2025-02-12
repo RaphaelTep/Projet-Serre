@@ -5,7 +5,7 @@
 
 // Définition du nom et mot de passe du Point d'Accès
 const char *ssid = "ESP32_AP";
-const char *passphrase = "DFxoUh02uF@*BHep";
+const char *passphrase = "123456789";
 
 // Définition de l'adresse IP du serveur
 IPAddress local_IP(192,168,4,1);
@@ -126,12 +126,16 @@ void setup() {
     //Définit le pin d'input 13 (celui du ventilateur) en tant que pin de sortie
     pinMode(VENTI_PIN,OUTPUT);
     pinMode(ARROSE_PIN,OUTPUT);
+    pinMode(BRUMI_PIN,OUTPUT);
+    pinMode(HUMIVCC_PIN,OUTPUT);
 }
 
 // code de la fonction qui récupère l'humidité au sol
 void Hum_sol()
 {
+  digitalWrite(HUMIVCC_PIN,HIGH);
   humidite = analogRead(HUM_PIN);
+  digitalWrite(HUMIVCC_PIN,LOW);
   if (humidite < SEUIL)
   {
     Serial.print("\n \nLe sol est trop sec ! Il faut arroser !");
@@ -157,19 +161,28 @@ void loop()
     Temp_Hum();
     Hum_sol();
     departTimer = time(NULL);
-    if (temperature>temperature_max)   
+    if (temperature>temp_max)   
     {
       digitalWrite(VENTI_PIN, HIGH);
       delay(10000);
       digitalWrite(VENTI_PIN,LOW);
     }
 
+    //code de l'activation automatique du brumisqteur
     if (hygrometrie < hygrometrie_min)
     {
-      digitalWrite(ARROSE_PIN, HIGH);
+      digitalWrite(BRUMI_PIN, HIGH);
       delay(10000);
-      digitalWrite(ARROSE_PIN,LOW);
+      digitalWrite(BRUMI_PIN,LOW);
     }
+
+    if (humidite < hum_min)
+    {
+      digitalWrite(ARROSE_PIN, HIGH);
+      delay(5000);
+      digitalWrite(ARROSE_PIN, LOW);
+    }
+
     Serial.print("\ntemperature : ");
     Serial.print(temperature);
     Serial.print("°C");
