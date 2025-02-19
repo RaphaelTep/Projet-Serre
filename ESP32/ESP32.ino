@@ -9,7 +9,7 @@ const char *passphrase = "123456789";
 
 // Définition de l'adresse IP du serveur
 IPAddress local_IP(192,168,4,1);
-IPAddress gateway(192,168,4,1);  // Correction ici
+IPAddress gateway(192,168,4,1);  
 IPAddress subnet(255,255,255,0);
 
 // Déclaration du serveur Web
@@ -23,7 +23,7 @@ int hum_min;
 
 float temperature; // Variable pour la température
 float temp_min = 10.0;
-float temp_max = 20.0;
+float temp_max = 25.0;
 float hygrometrie; // Variable pour le taux d'hygrométrie (humidité dans l'air)
 float hygrometrie_min;
 #define TEMP_HYG_PIN 4 // Le pin de l'ESP32 qui va servir a lire le capteur de température et d'hygrométrie
@@ -37,6 +37,9 @@ DHT temp_hyg(TEMP_HYG_PIN,DHTTYPE); // création d'un objet temp_hyg de la class
  
 
 time_t departTimer=time(NULL); // création d'un timer pour appeler les fonctions toutes les x secondes
+time_t TimerBrumi;
+time_t TimerArrose;
+time_t TimerVenti;
 
 // Page HTML avec mise à jour automatique
 //Pour changer la vitesse d'actualisation, il faut changer le nombre après CONTENT= a la ligne 41 (en secondes)
@@ -156,7 +159,25 @@ void Temp_Hum()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop() 
 {
-  if (time(NULL) - departTimer >= 30) // Mise à jour des données toutes les x secondes
+// Eteint la pompe du brumisateur après 10s
+  if (time(NULL) - TimerBrumi >= 60)
+  {
+    digitalWrite(BRUMI_PIN,LOW);
+  }
+
+// Eteint la pompe d'arrosage après 10s
+  if (time(NULL) - TimerArrose >= 60)
+  {
+    digitalWrite(ARROSE_PIN,LOW);
+  }
+// Eteint le ventilateur après 10s d'utilisation
+  if (time(NULL) - TimerVenti >= 30)
+  {
+    digitalWrite(VENTI_PIN,LOW);
+  }
+
+// Mise à jour des données toutes les x secondes
+  if (time(NULL) - departTimer >= 300) 
   {
     Temp_Hum();
     Hum_sol();
@@ -164,25 +185,25 @@ void loop()
     if (temperature>temp_max)   
     {
       digitalWrite(VENTI_PIN, HIGH);
-      delay(10000);
-      digitalWrite(VENTI_PIN,LOW);
+      TimerVenti=time(NULL);
     }
 
-    //code de l'activation automatique du brumisqteur
+    //code de l'activation automatique du brumisateur
     if (hygrometrie < hygrometrie_min)
     {
       digitalWrite(BRUMI_PIN, HIGH);
-      delay(10000);
+      TimerBrumi = time(NULL);
       digitalWrite(BRUMI_PIN,LOW);
     }
 
+    //code de l'activation automatique de la pompe pour arroser le sol
     if (humidite < hum_min)
     {
       digitalWrite(ARROSE_PIN, HIGH);
-      delay(5000);
+      TimerArrose = time(NULL);
       digitalWrite(ARROSE_PIN, LOW);
     }
-
+    // Affichage des informations 
     Serial.print("\ntemperature : ");
     Serial.print(temperature);
     Serial.print("°C");
